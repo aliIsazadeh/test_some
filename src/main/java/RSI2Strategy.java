@@ -75,11 +75,9 @@ public class RSI2Strategy {
         List<ResultModel> resultModels = new ArrayList<>();
 
 
-        ResultModel resultModel = null;
-        for (int RSIBarCount = 1; RSIBarCount < 3; RSIBarCount++) {
-            System.out.println("RSIBarCount = " + RSIBarCount);
+        ResultModel resultModel;
+        for (int RSIBarCount = 2; RSIBarCount <= 3; RSIBarCount++) {
             for (int shortSMABarCount = 1; shortSMABarCount < 300; shortSMABarCount++) {
-                System.out.println("shortSMABarCount = " + shortSMABarCount);
                 for (int longSMABarCount = 1; longSMABarCount < 300; longSMABarCount++) {
 
                     // Building the trading strategy
@@ -98,15 +96,7 @@ public class RSI2Strategy {
                     Num result = new GrossReturnCriterion().calculate(series
                             , tradingRecord);
                     if (result.getDelegate().intValue() == 0) {
-                        System.out.println("RSIBarCount = " + RSIBarCount);
-                        System.out.println("shortSMABarCount = " + shortSMABarCount);
-                        System.out.println("longSMABarCount = " + longSMABarCount);
-                        System.out.println("skip ------------------");
                         continue;
-                    }else {
-                        System.out.println(
-                                "Total return for the strategy: " + result);
-
                     }
                     resultModel =
                             new ResultModel()
@@ -120,9 +110,9 @@ public class RSI2Strategy {
             }
         }
 
-        resultModels.sort(Comparator.comparing(ResultModel::getResult));
-        for (int i = 0; i < 10; i++) {
-            System.out.println(resultModels.get(i).toString());
+        resultModels.sort(Comparator.comparing(ResultModel::getResult).reversed());
+        for (ResultModel model : resultModels) {
+            System.out.println(model.toString());
         }
     }
 
