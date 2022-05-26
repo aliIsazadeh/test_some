@@ -23,7 +23,12 @@
  */
 
 import loaders.CsvTradesLoader;
-import org.ta4j.core.*;
+import org.ta4j.core.BarSeries;
+import org.ta4j.core.BarSeriesManager;
+import org.ta4j.core.BaseStrategy;
+import org.ta4j.core.Rule;
+import org.ta4j.core.Strategy;
+import org.ta4j.core.TradingRecord;
 import org.ta4j.core.analysis.criteria.pnl.GrossReturnCriterion;
 import org.ta4j.core.indicators.SMAIndicator;
 import org.ta4j.core.indicators.adx.ADXIndicator;
@@ -35,13 +40,15 @@ import org.ta4j.core.rules.CrossedUpIndicatorRule;
 import org.ta4j.core.rules.OverIndicatorRule;
 import org.ta4j.core.rules.UnderIndicatorRule;
 
+import java.util.Date;
+
 
 /**
  * ADX indicator based strategy
  *
  * @see <a href=
- *      "http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx">
- *      http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx</a>
+ * "http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx">
+ * http://stockcharts.com/school/doku.php?id=chart_school:technical_indicators:average_directional_index_adx</a>
  */
 public class ADXStrategy {
 
@@ -49,20 +56,22 @@ public class ADXStrategy {
      * @param series a bar series
      * @return an adx indicator based strategy
      */
-    public static Strategy buildStrategy(BarSeries series) {
+    public static Strategy buildStrategy(BarSeries series, int sma,
+                                         int adx, int over) {
         if (series == null) {
             throw new IllegalArgumentException("Series cannot be null");
         }
 
         final ClosePriceIndicator closePriceIndicator = new ClosePriceIndicator(series);
-        final SMAIndicator smaIndicator = new SMAIndicator(closePriceIndicator, 50);
+        final SMAIndicator smaIndicator =
+                new SMAIndicator(closePriceIndicator, sma);
 
-        final int adxBarCount = 14;
-        final ADXIndicator adxIndicator = new ADXIndicator(series, adxBarCount);
-        final OverIndicatorRule adxOver20Rule = new OverIndicatorRule(adxIndicator, 20);
+        final ADXIndicator adxIndicator = new ADXIndicator(series, adx);
+        final OverIndicatorRule adxOver20Rule =
+                new OverIndicatorRule(adxIndicator, over);
 
-        final PlusDIIndicator plusDIIndicator = new PlusDIIndicator(series, adxBarCount);
-        final MinusDIIndicator minusDIIndicator = new MinusDIIndicator(series, adxBarCount);
+        final PlusDIIndicator plusDIIndicator = new PlusDIIndicator(series, adx);
+        final MinusDIIndicator minusDIIndicator = new MinusDIIndicator(series, adx);
 
         final Rule plusDICrossedUpMinusDI = new CrossedUpIndicatorRule(plusDIIndicator, minusDIIndicator);
         final Rule plusDICrossedDownMinusDI = new CrossedDownIndicatorRule(plusDIIndicator, minusDIIndicator);
@@ -72,14 +81,30 @@ public class ADXStrategy {
         final UnderIndicatorRule closePriceUnderSma = new UnderIndicatorRule(closePriceIndicator, smaIndicator);
         final Rule exitRule = adxOver20Rule.and(plusDICrossedDownMinusDI).and(closePriceUnderSma);
 
-        return new BaseStrategy("ADX", entryRule, exitRule, adxBarCount);
+        return new BaseStrategy("ADX", entryRule, exitRule, adx);
     }
 
     public static void main(String[] args) {
         long l = System.currentTimeMillis();
         // Getting the bar series
         BarSeries series = CsvTradesLoader.loadBitstampSeries();
+        Date start = new Date();
+        test(
+                new int[]{1, 100},
+                new int[]{1, 100},
+                new int[]{1, 100}, series
+        );
+        Date finish = new Date();
+        System.out.println("start = " + start);
+        System.out.println("finish = " + finish);
+    }
 
+    private static void test(int[] rangeADX, int[] rangeSMA,
+                             int[] rangeOver, BarSeries barSeries) {
+
+        for (int adx = rangeADX[0]; adx < rangeADX[1]; adx++) {
+            for (int sma = rangeSMA[0]; sma < rangeSMA[1]; sma++) {
+                for (int over = rangeOver[0]; over < rangeOver[1]; over++) {
         // Building the trading strategy
         Strategy strategy = buildStrategy(series);
 
@@ -94,5 +119,10 @@ public class ADXStrategy {
 
         long l2 = System.currentTimeMillis();
         System.out.println(l2-l + "this is how much");
+
+                }
+            }
+        }
+
     }
 }
