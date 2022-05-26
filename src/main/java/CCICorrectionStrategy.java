@@ -70,6 +70,7 @@ public class CCICorrectionStrategy {
         // Getting the bar series
         BarSeries series = CsvTradesLoader.loadBitstampSeries();
 
+        long l = System.currentTimeMillis();
         // Building the trading strategy
         Strategy strategy = buildStrategy(series);
 
@@ -81,5 +82,6 @@ public class CCICorrectionStrategy {
         // Analysis
         System.out.println(
                 "Total return for the strategy: " + new GrossReturnCriterion().calculate(series, tradingRecord));
+        System.out.println(System.currentTimeMillis()-l);
     }
 }
