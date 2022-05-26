@@ -35,12 +35,19 @@ import org.ta4j.core.indicators.adx.ADXIndicator;
 import org.ta4j.core.indicators.adx.MinusDIIndicator;
 import org.ta4j.core.indicators.adx.PlusDIIndicator;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
+import org.ta4j.core.num.Num;
 import org.ta4j.core.rules.CrossedDownIndicatorRule;
 import org.ta4j.core.rules.CrossedUpIndicatorRule;
 import org.ta4j.core.rules.OverIndicatorRule;
 import org.ta4j.core.rules.UnderIndicatorRule;
+import result.ResultModel;
 
+import java.io.File;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -56,19 +63,16 @@ public class ADXStrategy {
      * @param series a bar series
      * @return an adx indicator based strategy
      */
-    public static Strategy buildStrategy(BarSeries series, int sma,
-                                         int adx, int over) {
+    public static Strategy buildStrategy(BarSeries series, int sma, int adx, int over) {
         if (series == null) {
             throw new IllegalArgumentException("Series cannot be null");
         }
 
         final ClosePriceIndicator closePriceIndicator = new ClosePriceIndicator(series);
-        final SMAIndicator smaIndicator =
-                new SMAIndicator(closePriceIndicator, sma);
+        final SMAIndicator smaIndicator = new SMAIndicator(closePriceIndicator, sma);
 
         final ADXIndicator adxIndicator = new ADXIndicator(series, adx);
-        final OverIndicatorRule adxOver20Rule =
-                new OverIndicatorRule(adxIndicator, over);
+        final OverIndicatorRule adxOver20Rule = new OverIndicatorRule(adxIndicator, over);
 
         final PlusDIIndicator plusDIIndicator = new PlusDIIndicator(series, adx);
         final MinusDIIndicator minusDIIndicator = new MinusDIIndicator(series, adx);
@@ -84,44 +88,74 @@ public class ADXStrategy {
         return new BaseStrategy("ADX", entryRule, exitRule, adx);
     }
 
+
+    // each test time is 35 ms
     public static void main(String[] args) {
         long l = System.currentTimeMillis();
         // Getting the bar series
         BarSeries series = CsvTradesLoader.loadBitstampSeries();
         Date start = new Date();
         test(
+                new int[]{15, 100},
                 new int[]{1, 100},
                 new int[]{1, 100},
-                new int[]{1, 100}, series
-        );
+                series);
         Date finish = new Date();
         System.out.println("start = " + start);
         System.out.println("finish = " + finish);
     }
 
-    private static void test(int[] rangeADX, int[] rangeSMA,
-                             int[] rangeOver, BarSeries barSeries) {
+    private static void test(int[] rangeADX, int[] rangeSMA, int[] rangeOver, BarSeries series) {
+        long lt = 0;
+        long count = 0;
+        List<ResultModel> resultModels = new ArrayList<>();
+        ResultModel resultModel = null;
+
 
         for (int adx = rangeADX[0]; adx < rangeADX[1]; adx++) {
             for (int sma = rangeSMA[0]; sma < rangeSMA[1]; sma++) {
                 for (int over = rangeOver[0]; over < rangeOver[1]; over++) {
-        // Building the trading strategy
-        Strategy strategy = buildStrategy(series);
+                    // Building the trading strategy
+                    long l = System.currentTimeMillis();
+                    Strategy strategy = buildStrategy(series, sma, adx, over);
 
-        // Running the strategy
-        BarSeriesManager seriesManager = new BarSeriesManager(series);
-        TradingRecord tradingRecord = seriesManager.run(strategy);
-        System.out.println("Number of positions for the strategy: " + tradingRecord.getPositionCount());
+                    // Running the strategy
+                    BarSeriesManager seriesManager = new BarSeriesManager(series);
+                    TradingRecord tradingRecord = seriesManager.run(strategy);
+                    int positionCount = tradingRecord.getPositionCount();
 
-        // Analysis
-        System.out.println(
-                "Total return for the strategy: " + new GrossReturnCriterion().calculate(series, tradingRecord));
+                    Num result = new GrossReturnCriterion().calculate(series, tradingRecord);
 
-        long l2 = System.currentTimeMillis();
-        System.out.println(l2-l + "this is how much");
-
+                    long l2 = System.currentTimeMillis();
+                    lt += (l2 - l);
+                    count++;
+                    resultModel = ResultModel.builder().result(result).adx(adx).sma(sma).over(over).numberOfPositions(positionCount).build();
+//                    System.out.println(resultModel.toString());
+                    resultModels.add(resultModel);
                 }
             }
+        }
+
+        System.out.println("lt = " + lt);
+        System.out.println("count = " + count);
+        System.out.println("average = " + lt / count);
+        System.out.println("sorting results");
+        resultModels.sort(Comparator.comparing(ResultModel::getResult).reversed());
+        System.out.println("write to file");
+        try {
+            Date now = new Date();
+            File file = new File("ADXResults "+now.toString()+".txt");
+            if (file.exists())
+                file.delete();
+            file.createNewFile();
+            PrintWriter printWriter = new PrintWriter(file);
+            resultModels.forEach(resultModel1 -> {
+                printWriter.println(resultModel1.toString());
+                printWriter.flush();
+            });
+            printWriter.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
     }
