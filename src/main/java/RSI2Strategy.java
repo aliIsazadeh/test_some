@@ -108,13 +108,13 @@ public class RSI2Strategy {
                                 "Total return for the strategy: " + result);
 
                     }
-                    resultModel =
-                            new ResultModel()
-                                    .setRSIBarCount(RSIBarCount)
-                                    .setLongsMABarCount(longSMABarCount)
-                                    .setShortSMABarCount(shortSMABarCount)
-                                    .setResult(result);
-                    resultModels.add(resultModel);
+//                    resultModel =
+//                            new ResultModel()
+//                                    .setRSIBarCount(RSIBarCount)
+//                                    .setLongsMABarCount(longSMABarCount)
+//                                    .setShortSMABarCount(shortSMABarCount)
+//                                    .setResult(result);
+//                    resultModels.add(resultModel);
 
                 }
             }
