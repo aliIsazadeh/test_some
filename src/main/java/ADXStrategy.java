@@ -91,14 +91,13 @@ public class ADXStrategy {
 
     // each test time is 35 ms
     public static void main(String[] args) {
-        long l = System.currentTimeMillis();
         // Getting the bar series
         BarSeries series = CsvTradesLoader.loadBitstampSeries();
         Date start = new Date();
         test(
-                new int[]{15, 100},
-                new int[]{1, 100},
-                new int[]{1, 100},
+                new int[]{100, 150},
+                new int[]{1, 10},
+                new int[]{1, 10},
                 series);
         Date finish = new Date();
         System.out.println("start = " + start);
@@ -130,7 +129,7 @@ public class ADXStrategy {
                     lt += (l2 - l);
                     count++;
                     resultModel = ResultModel.builder().result(result).adx(adx).sma(sma).over(over).numberOfPositions(positionCount).build();
-//                    System.out.println(resultModel.toString());
+                    System.out.println(resultModel.toString());
                     resultModels.add(resultModel);
                 }
             }
@@ -144,7 +143,8 @@ public class ADXStrategy {
         System.out.println("write to file");
         try {
             Date now = new Date();
-            File file = new File("ADXResults "+now.toString()+".txt");
+            File file = new File("ADXResults-"+rangeADX[0]+"-"+rangeADX[1]+
+                    ".txt");
             if (file.exists())
                 file.delete();
             file.createNewFile();
