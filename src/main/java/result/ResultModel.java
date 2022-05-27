@@ -13,9 +13,10 @@ import org.ta4j.core.num.Num;
 @Builder
 @ToString
 public class ResultModel {
-    private int RSIBarCount;
-    private int shortSMABarCount;
-    private int longsMABarCount;
+    private int longCCI;
+    private int shortCCI;
+    private int plus;
+    private int minus;
     private int numberOfPositions;
     private Num result;
 

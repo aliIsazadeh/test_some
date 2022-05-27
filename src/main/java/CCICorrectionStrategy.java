@@ -23,20 +23,33 @@
  */
 
 import loaders.CsvTradesLoader;
-import org.ta4j.core.*;
+import org.ta4j.core.BarSeries;
+import org.ta4j.core.BarSeriesManager;
+import org.ta4j.core.BaseStrategy;
+import org.ta4j.core.Rule;
+import org.ta4j.core.Strategy;
+import org.ta4j.core.TradingRecord;
 import org.ta4j.core.analysis.criteria.pnl.GrossReturnCriterion;
 import org.ta4j.core.indicators.CCIIndicator;
 import org.ta4j.core.num.Num;
 import org.ta4j.core.rules.OverIndicatorRule;
 import org.ta4j.core.rules.UnderIndicatorRule;
+import result.ResultModel;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 
 /**
  * CCI Correction Strategy
  *
  * @see <a href=
- *      "http://stockcharts.com/school/doku.php?id=chart_school:trading_strategies:cci_correction">
- *      http://stockcharts.com/school/doku.php?id=chart_school:trading_strategies:cci_correction</a>
+ * "http://stockcharts.com/school/doku.php?id=chart_school:trading_strategies:cci_correction">
+ * http://stockcharts.com/school/doku.php?id=chart_school:trading_strategies:cci_correction</a>
  */
 public class CCICorrectionStrategy {
 
@@ -44,15 +57,16 @@ public class CCICorrectionStrategy {
      * @param series a bar series
      * @return a CCI correction strategy
      */
-    public static Strategy buildStrategy(BarSeries series) {
+    public static Strategy buildStrategy(BarSeries series, int longCCi,
+                                         int shortCCi, int plus, int minus) {
         if (series == null) {
             throw new IllegalArgumentException("Series cannot be null");
         }
 
-        CCIIndicator longCci = new CCIIndicator(series, 200);
-        CCIIndicator shortCci = new CCIIndicator(series, 5);
-        Num plus100 = series.numOf(100);
-        Num minus100 = series.numOf(-100);
+        CCIIndicator longCci = new CCIIndicator(series, longCCi);
+        CCIIndicator shortCci = new CCIIndicator(series, shortCCi);
+        Num plus100 = series.numOf(plus);
+        Num minus100 = series.numOf(minus);
 
         Rule entryRule = new OverIndicatorRule(longCci, plus100) // Bull trend
                 .and(new UnderIndicatorRule(shortCci, minus100)); // Signal
@@ -65,23 +79,59 @@ public class CCICorrectionStrategy {
         return strategy;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
         // Getting the bar series
         BarSeries series = CsvTradesLoader.loadBitstampSeries();
-
+        List<ResultModel> list = new ArrayList<>();
+        ResultModel resultModel = null;
         long l = System.currentTimeMillis();
-        // Building the trading strategy
-        Strategy strategy = buildStrategy(series);
+        for (int longCCI = 100; longCCI <= 200; longCCI+=5) {
+            for (int shortCCI = 5; shortCCI <= 50; shortCCI+=5) {
+                for (int plus = 100; plus <= 150; plus+=5) {
+                    for (int minus = -150; minus <= (-100); minus+=5) {
+                            Strategy strategy = buildStrategy(series, longCCI,
+                                    shortCCI, plus, minus);
+                            // Building the trading strategy
 
-        // Running the strategy
-        BarSeriesManager seriesManager = new BarSeriesManager(series);
-        TradingRecord tradingRecord = seriesManager.run(strategy);
-        System.out.println("Number of positions for the strategy: " + tradingRecord.getPositionCount());
+                            // Running the strategy
+                            BarSeriesManager seriesManager = new BarSeriesManager(series);
+                            TradingRecord tradingRecord = seriesManager.run(strategy);
+                            int positionCount =
+                                    tradingRecord.getPositionCount();
 
-        // Analysis
-        System.out.println(
-                "Total return for the strategy: " + new GrossReturnCriterion().calculate(series, tradingRecord));
-        System.out.println(System.currentTimeMillis()-l);
+                            // Analysis
+                            Num result = new GrossReturnCriterion().calculate(series
+                                    , tradingRecord);
+                            resultModel = ResultModel.builder()
+                                    .longCCI(longCCI)
+                                    .shortCCI(shortCCI)
+                                    .plus(plus)
+                                    .minus(minus)
+                                    .numberOfPositions(positionCount)
+                                    .result(result)
+                                    .build();
+                            System.out.println(resultModel.toString());
+                            list.add(resultModel);
+
+
+                    }
+                }
+            }
+        }
+
+        list.sort(Comparator.comparing(ResultModel::getResult).reversed());
+
+        File file = new File("CCI.txt");
+        if (file.exists())
+            file.delete();
+        file.createNewFile();
+
+        PrintWriter printWriter = new PrintWriter(file);
+        for (ResultModel model : list) {
+            printWriter.println(model.toString());
+            printWriter.flush();
+        }
+        printWriter.close();
     }
 }
