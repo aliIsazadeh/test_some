@@ -17,6 +17,11 @@ import org.ta4j.core.rules.OverIndicatorRule;
 import org.ta4j.core.rules.UnderIndicatorRule;
 import result.ResultModel;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -68,7 +73,7 @@ public class RSI2Strategy {
         return new BaseStrategy(entryRule, exitRule);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
         // Getting the bar series
         BarSeries series = CsvTradesLoader.loadBitstampSeries();
@@ -97,17 +102,8 @@ public class RSI2Strategy {
 //                    // Analysis
                     Num result = new GrossReturnCriterion().calculate(series
                             , tradingRecord);
-                    if (result.getDelegate().intValue() == 0) {
-                        System.out.println("RSIBarCount = " + RSIBarCount);
-                        System.out.println("shortSMABarCount = " + shortSMABarCount);
-                        System.out.println("longSMABarCount = " + longSMABarCount);
-                        System.out.println("skip ------------------");
-                        continue;
-                    }else {
-                        System.out.println(
-                                "Total return for the strategy: " + result);
 
-                    }
+
                     resultModel =
                             new ResultModel()
                                     .setRSIBarCount(RSIBarCount)
@@ -115,14 +111,19 @@ public class RSI2Strategy {
                                     .setShortSMABarCount(shortSMABarCount)
                                     .setResult(result);
                     resultModels.add(resultModel);
-
+                    System.out.println("resultModel = " + resultModel.toString());
                 }
             }
         }
 
         resultModels.sort(Comparator.comparing(ResultModel::getResult));
-        for (int i = 0; i < 10; i++) {
-            System.out.println(resultModels.get(i).toString());
+        File file = new File("RSI2.txt");
+        if (file.exists())
+            file.delete();
+        file.createNewFile();
+        PrintWriter printWriter = new PrintWriter(file);
+        for (ResultModel model : resultModels) {
+            printWriter.println(model.toString());
         }
     }
 
