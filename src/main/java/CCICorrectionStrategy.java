@@ -85,9 +85,8 @@ public class CCICorrectionStrategy {
         BarSeries series = CsvTradesLoader.loadBitstampSeries();
         List<ResultModel> list = new ArrayList<>();
         ResultModel resultModel = null;
-        long l = System.currentTimeMillis();
         for (int longCCI = 100; longCCI <= 200; longCCI+=5) {
-            for (int shortCCI = 5; shortCCI <= 50; shortCCI+=5) {
+            for (int shortCCI = 5; shortCCI <= 25; shortCCI+=5) {
                 for (int plus = 100; plus <= 150; plus+=5) {
                     for (int minus = -150; minus <= (-100); minus+=5) {
                             Strategy strategy = buildStrategy(series, longCCI,
