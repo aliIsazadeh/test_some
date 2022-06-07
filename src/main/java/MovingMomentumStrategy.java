@@ -23,24 +23,38 @@
  */
 
 import loaders.CsvTradesLoader;
-import org.ta4j.core.*;
+import org.ta4j.core.BarSeries;
+import org.ta4j.core.BarSeriesManager;
+import org.ta4j.core.BaseStrategy;
+import org.ta4j.core.Rule;
+import org.ta4j.core.Strategy;
+import org.ta4j.core.TradingRecord;
 import org.ta4j.core.analysis.criteria.pnl.GrossReturnCriterion;
 import org.ta4j.core.indicators.EMAIndicator;
 import org.ta4j.core.indicators.MACDIndicator;
 import org.ta4j.core.indicators.StochasticOscillatorKIndicator;
 import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
+import org.ta4j.core.num.Num;
 import org.ta4j.core.rules.CrossedDownIndicatorRule;
 import org.ta4j.core.rules.CrossedUpIndicatorRule;
 import org.ta4j.core.rules.OverIndicatorRule;
 import org.ta4j.core.rules.UnderIndicatorRule;
+import result.ResultModel;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 
 /**
  * Moving momentum strategy.
  *
  * @see <a href=
- *      "http://stockcharts.com/help/doku.php?id=chart_school:trading_strategies:moving_momentum">
- *      http://stockcharts.com/help/doku.php?id=chart_school:trading_strategies:moving_momentum</a>
+ * "http://stockcharts.com/help/doku.php?id=chart_school:trading_strategies:moving_momentum">
+ * http://stockcharts.com/help/doku.php?id=chart_school:trading_strategies:moving_momentum</a>
  */
 public class MovingMomentumStrategy {
 
@@ -57,7 +71,7 @@ public class MovingMomentumStrategy {
                                          int EMAMACDBarCount,
                                          int entryThreshold,
                                          int exitThreshold
-                                         ) {
+    ) {
         if (series == null) {
             throw new IllegalArgumentException("Series cannot be null");
         }
@@ -93,23 +107,78 @@ public class MovingMomentumStrategy {
         return new BaseStrategy(entryRule, exitRule);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
         // Getting the bar series
         BarSeries series = CsvTradesLoader.loadBitstampSeries();
+        //idea: use fibonachi values for this array
+        // maybe we found sexy results :)
+//        int[] EMAValues = new int[]{9, 12, 15};
+        int[] EMAValues = new int[]{9, 12, 15, 24, 26, 28, 30, 50, 80, 150, 200, 250};
 
         long l = System.currentTimeMillis();
         // Building the trading strategy
-        Strategy strategy = buildStrategy(series,0,0,0,0,0,0
-        ,0,0);
+        Strategy strategy = null;
+        ResultModel resultModel = null;
+        List<ResultModel> resultModels = new ArrayList<>();
 
-        // Running the strategy
-        BarSeriesManager seriesManager = new BarSeriesManager(series);
-        TradingRecord tradingRecord = seriesManager.run(strategy);
-        System.out.println("Number of positions for the strategy: " + tradingRecord.getPositionCount());
-        System.out.println(System.currentTimeMillis()-l);
-        // Analysis
-        System.out.println(
-                "Total profit for the strategy: " + new GrossReturnCriterion().calculate(series, tradingRecord));
+        for (int shortEMABarCount : EMAValues) {
+            for (int longEMABarCount : EMAValues) {
+                for (int stoch = 2; stoch <= 30; stoch += 2) {
+                    for (int shortMACD = 7; shortMACD < 33; shortMACD += 2) {
+                        for (int longMACD = 7; longMACD < 33; longMACD += 2) {
+                            if (longMACD<shortMACD)
+                                continue;
+
+                            for (int EMAMACD : EMAValues) {
+                                for (int entry = 10; entry <= 150; entry += 10) {
+                                    for (int exit = 10; exit <= 150; exit += 10) {
+                                        strategy = buildStrategy(series,
+                                                shortEMABarCount,
+                                                longEMABarCount, stoch,
+                                                shortMACD, longMACD, EMAMACD,
+                                                entry, exit);
+                                        BarSeriesManager seriesManager = new BarSeriesManager(series);
+                                        TradingRecord tradingRecord = seriesManager.run(strategy);
+                                        Num result = new GrossReturnCriterion().calculate(series
+                                                , tradingRecord);
+                                        resultModel =
+                                                ResultModel.builder()
+                                                        .shortEMABarCount(shortEMABarCount)
+                                                        .longEMABarCount(longEMABarCount)
+                                                        .stoch(stoch)
+                                                        .shortMACD(shortMACD)
+                                                        .longMACD(longMACD)
+                                                        .EMAMACD(EMAMACD)
+                                                        .entry(entry)
+                                                        .exit(exit)
+                                                        .numberOfPositions(tradingRecord.getPositionCount())
+                                                        .result(result)
+                                                        .build();
+                                        if (result.getDelegate().floatValue()> 1.0)
+                                            System.out.println(result.getDelegate().doubleValue());
+                                        resultModels.add(resultModel);
+
+                                    }
+                                }
+                            }
+
+                            resultModels.sort(Comparator.comparing(ResultModel::getResult).reversed());
+                            File file = new File("MM.txt");
+                            if (file.exists())
+                                file.delete();
+                            file.createNewFile();
+
+                            PrintWriter printWriter = new PrintWriter(file);
+                            resultModels.forEach(resultModel1 ->
+                                    printWriter.println(resultModel1.toString())
+                            );
+
+                        }
+
+                    }
+                }
+            }
+        }
     }
 }
