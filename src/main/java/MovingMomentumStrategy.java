@@ -114,7 +114,11 @@ public class MovingMomentumStrategy {
         //idea: use fibonachi values for this array
         // maybe we found sexy results :)
 //        int[] EMAValues = new int[]{9, 12, 15};
-        int[] EMAValues = new int[]{9, 12, 15, 24, 26, 28, 30, 50, 80, 150, 200, 250};
+        int[] EMAValues = new int[]{9,
+                //12, 15, 24, 26, 28, 30,
+                50,
+            //    80, 150, 200, 250
+        };
 
         long l = System.currentTimeMillis();
         // Building the trading strategy
