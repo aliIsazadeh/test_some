@@ -5,7 +5,6 @@ import org.ta4j.core.BaseStrategy;
 import org.ta4j.core.Rule;
 import org.ta4j.core.Strategy;
 import org.ta4j.core.TradingRecord;
-
 import org.ta4j.core.analysis.criteria.pnl.GrossReturnCriterion;
 import org.ta4j.core.indicators.RSIIndicator;
 import org.ta4j.core.indicators.SMAIndicator;
@@ -18,11 +17,8 @@ import org.ta4j.core.rules.UnderIndicatorRule;
 import result.ResultModel;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -100,18 +96,21 @@ public class RSI2Strategy {
 //                    System.out.println("Number of positions for the strategy: " + tradingRecord.getPositionCount());
 //
 //                    // Analysis
-                    Num result = new GrossReturnCriterion().calculate(series
-                            , tradingRecord);
+                    if (tradingRecord.getPositionCount() > 0) {
+                        Num result = new GrossReturnCriterion().calculate(series
+                                , tradingRecord);
 
 
-                    resultModel =
-                            new ResultModel()
-                                    .setRSIBarCount(RSIBarCount)
-                                    .setLongsMABarCount(longSMABarCount)
-                                    .setShortSMABarCount(shortSMABarCount)
-                                    .setResult(result);
-                    resultModels.add(resultModel);
-                    System.out.println("resultModel = " + resultModel.toString());
+                        resultModel =
+                                new ResultModel()
+                                        .setRSIBarCount(RSIBarCount)
+                                        .setLongsMABarCount(longSMABarCount)
+                                        .setShortSMABarCount(shortSMABarCount)
+                                        .setNumberOfPositions(tradingRecord.getPositionCount())
+                                        .setResult(result);
+                        resultModels.add(resultModel);
+                        System.out.println("resultModel = " + resultModel.toString());
+                    }
                 }
             }
         }
