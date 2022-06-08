@@ -62,16 +62,7 @@ public class MovingMomentumStrategy {
      * @param series the bar series
      * @return the moving momentum strategy
      */
-    public static Strategy buildStrategy(BarSeries series,
-                                         int shortEMABarCount,
-                                         int longEMABarCount,
-                                         int stochasticOscillKBarCount,
-                                         int MACDShortBarCount,
-                                         int MACDLongBarCount,
-                                         int EMAMACDBarCount,
-                                         int entryThreshold,
-                                         int exitThreshold
-    ) {
+    public static Strategy buildStrategy(BarSeries series, int shortEMABarCount, int longEMABarCount, int stochasticOscillKBarCount, int MACDShortBarCount, int MACDLongBarCount, int EMAMACDBarCount, int entryThreshold, int exitThreshold) {
         if (series == null) {
             throw new IllegalArgumentException("Series cannot be null");
         }
@@ -85,11 +76,9 @@ public class MovingMomentumStrategy {
         EMAIndicator shortEma = new EMAIndicator(closePrice, shortEMABarCount);
         EMAIndicator longEma = new EMAIndicator(closePrice, longEMABarCount);
 
-        StochasticOscillatorKIndicator stochasticOscillK =
-                new StochasticOscillatorKIndicator(series, stochasticOscillKBarCount);
+        StochasticOscillatorKIndicator stochasticOscillK = new StochasticOscillatorKIndicator(series, stochasticOscillKBarCount);
 
-        MACDIndicator macd = new MACDIndicator(closePrice, MACDShortBarCount,
-                MACDLongBarCount);
+        MACDIndicator macd = new MACDIndicator(closePrice, MACDShortBarCount, MACDLongBarCount);
         EMAIndicator emaMacd = new EMAIndicator(macd, EMAMACDBarCount);
 
         // Entry rule
@@ -114,11 +103,13 @@ public class MovingMomentumStrategy {
         //idea: use fibonachi values for this array
         // maybe we found sexy results :)
 //        int[] EMAValues = new int[]{9, 12, 15};
-        int[] EMAValues = new int[]{9,
-                //12, 15, 24, 26, 28, 30,
-                50,
-            //    80, 150, 200, 250
+        int[] EMAValues1 = new int[]{
+                9, 12, 15,
+//                24, 26, 28,
+//                30, 50, 80,
+//                150, 200, 250
         };
+        int[] EMAValues = new int[]{9, 12, 15, 24, 26, 28, 30, 50, 80, 150, 200, 250};
 
         long l = System.currentTimeMillis();
         // Building the trading strategy
@@ -126,57 +117,36 @@ public class MovingMomentumStrategy {
         ResultModel resultModel = null;
         List<ResultModel> resultModels = new ArrayList<>();
 
-        for (int shortEMABarCount : EMAValues) {
+        for (int shortEMABarCount : EMAValues1) {
             for (int longEMABarCount : EMAValues) {
                 for (int stoch = 2; stoch <= 30; stoch += 2) {
                     for (int shortMACD = 7; shortMACD < 33; shortMACD += 2) {
                         for (int longMACD = 7; longMACD < 33; longMACD += 2) {
-                            if (longMACD<shortMACD)
-                                continue;
+                            if (longMACD < shortMACD) continue;
 
                             for (int EMAMACD : EMAValues) {
                                 for (int entry = 10; entry <= 150; entry += 10) {
                                     for (int exit = 10; exit <= 150; exit += 10) {
-                                        strategy = buildStrategy(series,
-                                                shortEMABarCount,
-                                                longEMABarCount, stoch,
-                                                shortMACD, longMACD, EMAMACD,
-                                                entry, exit);
+                                        strategy = buildStrategy(series, shortEMABarCount, longEMABarCount, stoch, shortMACD, longMACD, EMAMACD, entry, exit);
                                         BarSeriesManager seriesManager = new BarSeriesManager(series);
                                         TradingRecord tradingRecord = seriesManager.run(strategy);
-                                        Num result = new GrossReturnCriterion().calculate(series
-                                                , tradingRecord);
-                                        resultModel =
-                                                ResultModel.builder()
-                                                        .shortEMABarCount(shortEMABarCount)
-                                                        .longEMABarCount(longEMABarCount)
-                                                        .stoch(stoch)
-                                                        .shortMACD(shortMACD)
-                                                        .longMACD(longMACD)
-                                                        .EMAMACD(EMAMACD)
-                                                        .entry(entry)
-                                                        .exit(exit)
-                                                        .numberOfPositions(tradingRecord.getPositionCount())
-                                                        .result(result)
-                                                        .build();
-                                        if (result.getDelegate().floatValue()> 1.0)
-                                            System.out.println(result.getDelegate().doubleValue());
-                                        resultModels.add(resultModel);
-
+                                        if (tradingRecord.getPositionCount() > 0) {
+                                            Num result = new GrossReturnCriterion().calculate(series, tradingRecord);
+                                            resultModel = ResultModel.builder().shortEMABarCount(shortEMABarCount).longEMABarCount(longEMABarCount).stoch(stoch).shortMACD(shortMACD).longMACD(longMACD).EMAMACD(EMAMACD).entry(entry).exit(exit).numberOfPositions(tradingRecord.getPositionCount()).result(result).build();
+                                            System.out.println(resultModel.toString());
+                                            resultModels.add(resultModel);
+                                        }
                                     }
                                 }
                             }
 
                             resultModels.sort(Comparator.comparing(ResultModel::getResult).reversed());
                             File file = new File("MM.txt");
-                            if (file.exists())
-                                file.delete();
+                            if (file.exists()) file.delete();
                             file.createNewFile();
 
                             PrintWriter printWriter = new PrintWriter(file);
-                            resultModels.forEach(resultModel1 ->
-                                    printWriter.println(resultModel1.toString())
-                            );
+                            resultModels.forEach(resultModel1 -> printWriter.println(resultModel1.toString()));
 
                         }
 
