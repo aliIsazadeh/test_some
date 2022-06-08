@@ -83,7 +83,7 @@ public class RSI2Strategy {
         ResultModel resultModel = null;
         for (int RSIBarCount = 1; RSIBarCount < 3; RSIBarCount++) {
             System.out.println("RSIBarCount = " + RSIBarCount);
-            for (int shortSMABarCount = 1; shortSMABarCount < 300; shortSMABarCount++) {
+            for (int shortSMABarCount = 2; shortSMABarCount < 300; shortSMABarCount++) {
                 System.out.println("shortSMABarCount = " + shortSMABarCount);
                 for (int longSMABarCount = 1; longSMABarCount < 300; longSMABarCount++) {
 
