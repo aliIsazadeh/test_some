@@ -116,7 +116,7 @@ public class RSI2Strategy {
             }
         }
 
-        resultModels.sort(Comparator.comparing(ResultModel::getResult));
+        resultModels.sort(Comparator.comparing(ResultModel::getResult).reversed());
         File file = new File("RSI2.txt");
         if (file.exists())
             file.delete();
