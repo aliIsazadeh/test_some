@@ -27,6 +27,9 @@ import com.opencsv.CSVReader;
 import org.ta4j.core.BarSeries;
 import org.ta4j.core.BaseBarSeries;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -35,6 +38,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,33 +47,39 @@ import java.util.logging.Logger;
  */
 public class CsvBarsLoader {
 
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter DATE_FORMAT =
+            DateTimeFormatter.ofPattern("M/d/yyyy");
 
     /**
      * @return the bar series from Apple Inc. bars.
      */
-    public static BarSeries loadAppleIncSeries() {
-        return loadCsvSeries("appleinc_bars_from_20130101_usd.csv");
+    public static BarSeries loadAppleIncSeries() throws FileNotFoundException {
+        return loadCsvSeries("XAU_USD_2021_01_01_2022_07_06.csv");
     }
 
-    public static BarSeries loadCsvSeries(String filename) {
+    public static BarSeries loadCsvSeries(String filename) throws FileNotFoundException {
 
-        InputStream stream = CsvBarsLoader.class.getClassLoader().getResourceAsStream(filename);
+        File file = new File(filename);
 
-        BarSeries series = new BaseBarSeries("apple_bars");
+        InputStream stream = new FileInputStream(file);
 
-        try (CSVReader csvReader = new CSVReader(new InputStreamReader(stream, Charset.forName("UTF-8")), ',', '"',
+        BarSeries series = new BaseBarSeries("XAU|USD");
+
+        try (CSVReader csvReader = new CSVReader(new InputStreamReader(stream
+                , Charset.forName("UTF-8")), ',', '"',
                 1)) {
             String[] line;
             while ((line = csvReader.readNext()) != null) {
-                ZonedDateTime date = LocalDate.parse(line[0], DATE_FORMAT).atStartOfDay(ZoneId.systemDefault());
-                double open = Double.parseDouble(line[1]);
-                double high = Double.parseDouble(line[2]);
-                double low = Double.parseDouble(line[3]);
-                double close = Double.parseDouble(line[4]);
-                double volume = Double.parseDouble(line[5]);
+                ZonedDateTime date =
+                        LocalDate.of(Integer.parseInt(line[0].split("/")[2]),
+                                Integer.parseInt(line[0].split("/")[0]),
+                                Integer.parseInt(line[0].split("/")[1])).atStartOfDay(ZoneId.systemDefault());
+                double open = Double.parseDouble(line[2]);
+                double high = Double.parseDouble(line[3]);
+                double low = Double.parseDouble(line[4]);
+                double close = Double.parseDouble(line[1]);
 
-                series.addBar(date, open, high, low, close, volume);
+                series.addBar(date, open, high, low, close);
             }
         } catch (IOException ioe) {
             Logger.getLogger(CsvBarsLoader.class.getName()).log(Level.SEVERE, "Unable to load bars from CSV", ioe);
@@ -79,7 +89,7 @@ public class CsvBarsLoader {
         return series;
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws FileNotFoundException {
         BarSeries series = CsvBarsLoader.loadAppleIncSeries();
 
         System.out.println("Series: " + series.getName() + " (" + series.getSeriesPeriodDescription() + ")");
