@@ -38,7 +38,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -53,7 +52,7 @@ public class CsvBarsLoader {
     /**
      * @return the bar series from Apple Inc. bars.
      */
-    public static BarSeries loadAppleIncSeries() throws FileNotFoundException {
+    public static BarSeries loadXAUData() throws FileNotFoundException {
         return loadCsvSeries("XAU_USD_2021_01_01_2022_07_06.csv");
     }
 
@@ -90,7 +89,7 @@ public class CsvBarsLoader {
     }
 
     public static void main(String[] args) throws FileNotFoundException {
-        BarSeries series = CsvBarsLoader.loadAppleIncSeries();
+        BarSeries series = CsvBarsLoader.loadXAUData();
 
         System.out.println("Series: " + series.getName() + " (" + series.getSeriesPeriodDescription() + ")");
         System.out.println("Number of bars: " + series.getBarCount());
